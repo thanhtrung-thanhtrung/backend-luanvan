@@ -1,0 +1,120 @@
+1. Đăng ký (POST /api/users/register)
+Body:
+{
+    "HoTen": "Test User",
+    "Email": "test@example.com",
+    "MatKhau": "password123",
+    "SDT": "0987654321",
+    "DiaChi": "123 Test Street"
+}
+
+2. Đăng nhập (POST /api/users/login)
+Body:
+{
+    "Email": "test@example.com",
+    "MatKhau": "password123"
+}
+
+3. Lấy thông tin người dùng (GET /api/users/profile)
+Headers: 
+Authorization: Bearer {token}
+
+
+
+1. Lấy danh sách sản phẩm (GET /api/products)
+Query params:
+- page: 1
+- limit: 10
+- sort: price_desc
+- category: 1
+- brand: 1
+
+2. Lấy chi tiết sản phẩm (GET /api/products/{id})
+Example: GET /api/products/1
+
+3. Tìm kiếm sản phẩm (GET /api/products/search)
+Query params:
+- q: "Nike"
+- minPrice: 1000000
+- maxPrice: 5000000
+
+4. Lấy biến thể sản phẩm (GET /api/products/{id}/variants)
+Example: GET /api/products/1/variants
+
+1. Thêm vào giỏ hàng (POST /api/cart/add)
+Body:
+{
+    "id_SanPham_BienThe": 1,
+    "SoLuong": 1
+}
+
+2. Cập nhật số lượng (PUT /api/cart/update)
+Body:
+{
+    "id_SanPham_BienThe": 1,
+    "SoLuong": 2
+}
+
+3. Xóa khỏi giỏ hàng (DELETE /api/cart/{id})
+Example: DELETE /api/cart/1
+
+4. Lấy giỏ hàng (GET /api/cart)
+Headers: 
+Authorization: Bearer {token}
+1. Tạo đơn hàng (POST /api/orders)
+Body:
+{
+    "TenNguoiNhan": "Test User",
+    "SDTNguoiNhan": "0987654321",
+    "DiaChiNhan": "123 Test Street",
+    "id_ThanhToan": 1,
+    "id_VanChuyen": 1,
+    "MaGiamGia": "WELCOME10",
+    "GhiChu": "Test order"
+}
+
+2. Lấy danh sách đơn hàng (GET /api/orders)
+Headers: 
+Authorization: Bearer {token}
+
+3. Lấy chi tiết đơn hàng (GET /api/orders/{id})
+Example: GET /api/orders/1
+
+4. Hủy đơn hàng (PUT /api/orders/{id}/cancel)
+Example: PUT /api/orders/1/cancel
+
+
+1. Thêm đánh giá (POST /api/reviews)
+Body:
+{
+    "id_SanPham": 1,
+    "id_DonHang": 1,
+    "SoSao": 5,
+    "NoiDung": "Sản phẩm rất tốt",
+    "HinhAnh": "base64_image_string"
+}
+
+2. Lấy đánh giá của sản phẩm (GET /api/reviews/product/{id})
+Example: GET /api/reviews/product/1
+
+
+1. Thêm vào wishlist (POST /api/wishlist/add)
+Body:
+{
+    "id_SanPham": 1
+}
+
+2. Xóa khỏi wishlist (DELETE /api/wishlist/{id})
+Example: DELETE /api/wishlist/1
+
+3. Lấy wishlist (GET /api/wishlist)
+Headers: 
+Authorization: Bearer {token}
+
+
+1. Lấy danh sách danh mục (GET /api/categories)
+
+2. Lấy sản phẩm theo danh mục (GET /api/categories/{id}/products)
+Example: GET /api/categories/1/products
+
+
