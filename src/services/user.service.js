@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const User = require("../models/user.model");
 const UploadService = require("./upload.service");
 
@@ -29,6 +30,39 @@ class UserService {
     };
   }
 
+  static generateVerificationToken() {
+    return {
+      token: crypto.randomBytes(32).toString("hex"),
+      expires: new Date(Date.now() + 24 * 3600000), // 24 hours
+    };
+  }
+
+  static async sendVerificationEmail(email, token) {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: process.env.SMTP_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: email,
+      subject: "Xác thực tài khoản",
+      html: `
+        <h1>Xác thực tài khoản</h1>
+        <p>Vui lòng click vào link bên dưới để xác thực tài khoản của bạn:</p>
+        <a href="${verificationUrl}">${verificationUrl}</a>
+        <p>Link này sẽ hết hạn sau 24 giờ.</p>
+      `,
+    });
+  }
+
   static async register(userData) {
     const existingUser = await User.getByEmail(userData.Email);
     if (existingUser) {
@@ -40,6 +74,11 @@ class UserService {
       userData.Avatar = userData.Avatar.replace(/\\/g, "/");
     }
 
+    // Generate verification token
+    const { token, expires } = this.generateVerificationToken();
+    userData.verification_token = token;
+    userData.verification_expires = expires;
+
     // Hash password
     userData.MatKhau = await this.hashPassword(userData.MatKhau);
 
@@ -49,19 +88,19 @@ class UserService {
     // Add default customer role (id = 3)
     await User.addUserRole(userId, 3);
 
+    // Send verification email
+    await this.sendVerificationEmail(userData.Email, token);
+
     // Get user with roles
     const user = await User.getById(userId);
     const roles = await User.getUserRoles(userId);
-
-    // Generate token
-    const token = this.generateToken(user);
 
     return {
       user: {
         ...user,
         roles,
       },
-      token,
+      message: "Vui lòng kiểm tra email để xác thực tài khoản",
     };
   }
 
@@ -175,6 +214,32 @@ class UserService {
       reset_token: null,
       reset_token_expiry: null,
     });
+  }
+
+  static async verifyEmail(token) {
+    const verified = await User.verifyEmail(token);
+    if (!verified) {
+      throw new Error("Xác thực email không thành công");
+    }
+    return true;
+  }
+
+  static async resendVerification(email) {
+    const userId = await User.resendVerification(email);
+
+    // Generate new verification token
+    const { token, expires } = this.generateVerificationToken();
+
+    // Update user with new token
+    await User.update(userId, {
+      verification_token: token,
+      verification_expires: expires,
+    });
+
+    // Send new verification email
+    await this.sendVerificationEmail(email, token);
+
+    return true;
   }
 }
 

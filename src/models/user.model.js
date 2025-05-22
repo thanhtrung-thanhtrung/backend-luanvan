@@ -4,8 +4,9 @@ class User {
   static async create(userData) {
     const [result] = await db.execute(
       `INSERT INTO nguoidung (
-                HoTen, Email, MatKhau, SDT, DiaChi, Avatar
-            ) VALUES (?, ?, ?, ?, ?, ?)`,
+                HoTen, Email, MatKhau, SDT, DiaChi, Avatar,
+                verification_token, verification_expires, TrangThai
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userData.HoTen,
         userData.Email,
@@ -13,6 +14,9 @@ class User {
         userData.SDT || null,
         userData.DiaChi || null,
         userData.Avatar || null,
+        userData.verification_token,
+        userData.verification_expires,
+        0, // TrangThai = 0 cho đến khi xác thực email
       ]
     );
     return result.insertId;
@@ -137,6 +141,43 @@ class User {
       "DELETE FROM quyenguoidung WHERE id_NguoiDung = ? AND id_Quyen = ?",
       [userId, roleId]
     );
+  }
+
+  static async verifyEmail(token) {
+    const [rows] = await db.execute(
+      "SELECT id, verification_expires FROM nguoidung WHERE verification_token = ? AND TrangThai = 0",
+      [token]
+    );
+
+    const user = rows[0];
+    if (!user) {
+      throw new Error("Token không hợp lệ");
+    }
+
+    if (new Date() > new Date(user.verification_expires)) {
+      throw new Error("Token đã hết hạn");
+    }
+
+    await db.execute(
+      "UPDATE nguoidung SET TrangThai = 1, verification_token = NULL, verification_expires = NULL WHERE id = ?",
+      [user.id]
+    );
+
+    return true;
+  }
+
+  static async resendVerification(email) {
+    const [rows] = await db.execute(
+      "SELECT id FROM nguoidung WHERE Email = ? AND TrangThai = 0",
+      [email]
+    );
+
+    const user = rows[0];
+    if (!user) {
+      throw new Error("Không tìm thấy tài khoản chưa xác thực với email này");
+    }
+
+    return user.id;
   }
 }
 

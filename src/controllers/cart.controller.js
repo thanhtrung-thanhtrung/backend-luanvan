@@ -28,13 +28,7 @@ exports.getCart = async (req, res) => {
 
 exports.addToCart = async (req, res) => {
   try {
-    const { productId, variantId, quantity } = req.body;
-
-    // Kiểm tra sản phẩm tồn tại
-    const product = await Product.getById(productId);
-    if (!product) {
-      throw new AppError("Sản phẩm không tồn tại", 404);
-    }
+    const { id_SanPham_BienThe, SoLuong = 1 } = req.body;
 
     let cart;
     if (req.user) {
@@ -46,7 +40,7 @@ exports.addToCart = async (req, res) => {
     }
 
     // Thêm sản phẩm vào giỏ
-    await cart.add(product, variantId, quantity);
+    await cart.addVariant(id_SanPham_BienThe, SoLuong);
 
     // Lưu giỏ hàng
     if (req.user) {

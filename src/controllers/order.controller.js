@@ -13,7 +13,7 @@ exports.createOrder = async (req, res) => {
       cart = new Cart(req.session.cart);
     }
 
-    if (cart.totalQty === 0) {
+    if (!cart || cart.totalQty === 0) {
       throw new AppError("Giỏ hàng trống", 400);
     }
 
@@ -26,13 +26,22 @@ exports.createOrder = async (req, res) => {
 
     // Tạo đơn hàng mới
     const order = new Order({
-      id_NguoiDung: req.user?.id,
-      ...req.body,
+      id_NguoiDung: req.user?.id || null, // Cho phép null nếu chưa đăng nhập
+      TenNguoiNhan: req.body.TenNguoiNhan,
+      SDTNguoiNhan: req.body.SDTNguoiNhan,
+      EmailNguoiNhan: req.body.EmailNguoiNhan,
+      DiaChiNhan: req.body.DiaChiNhan,
+      GhiChu: req.body.GhiChu,
+      id_HinhThucThanhToan: req.body.id_HinhThucThanhToan,
+      id_HinhThucVanChuyen: req.body.id_HinhThucVanChuyen,
+      PhiVanChuyen: req.body.PhiVanChuyen || 0,
+      MaGiamGia: req.body.MaGiamGia,
+      TienGiam: req.body.TienGiam || 0,
       TongTien:
         cart.totalPrice +
         (req.body.PhiVanChuyen || 0) -
         (req.body.TienGiam || 0),
-      items,
+      items: items,
     });
 
     // Lưu đơn hàng
@@ -45,9 +54,12 @@ exports.createOrder = async (req, res) => {
     }
     req.session.cart = null;
 
-    res
-      .status(201)
-      .json(ApiResponse.success("Đặt hàng thành công", { orderId }));
+    res.status(201).json(
+      ApiResponse.success("Đặt hàng thành công", {
+        orderId,
+        orderCode: `DH${orderId.toString().padStart(6, "0")}`,
+      })
+    );
   } catch (error) {
     res.status(error.statusCode || 500).json(ApiResponse.error(error.message));
   }

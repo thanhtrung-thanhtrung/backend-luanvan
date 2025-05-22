@@ -1,4 +1,8 @@
 const Inventory = require("../models/inventory.model");
+const StockHistory = require("../models/stock-history.model");
+const InventoryCheck = require("../models/inventory-check.model");
+const { AppError } = require("../middlewares/error.middleware");
+const ApiResponse = require("../utils/apiResponse");
 
 exports.createStockEntry = async (req, res) => {
   try {
@@ -100,5 +104,143 @@ exports.getLowStockProducts = async (req, res) => {
       status: "error",
       message: error.message,
     });
+  }
+};
+
+exports.getStockHistory = async (req, res) => {
+  try {
+    const filters = {
+      productId: req.query.productId,
+      type: req.query.type,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      limit: req.query.limit,
+      offset: req.query.offset,
+    };
+
+    const history = await StockHistory.getHistory(filters);
+    res.json(ApiResponse.success("", history));
+  } catch (error) {
+    res.status(500).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.getStockAlerts = async (req, res) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || 10;
+    const alerts = await StockHistory.getStockAlerts(threshold);
+    res.json(ApiResponse.success("", alerts));
+  } catch (error) {
+    res.status(500).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.createInventoryCheck = async (req, res) => {
+  try {
+    const checkCode = await InventoryCheck.generateCheckCode();
+
+    const check = new InventoryCheck({
+      MaKiemKho: checkCode,
+      NgayKiemKho: new Date(),
+      id_NguoiKiemKho: req.user.id,
+      GhiChu: req.body.GhiChu,
+    });
+
+    const id = await check.save();
+
+    if (req.body.details && req.body.details.length > 0) {
+      await check.addDetail(req.body.details);
+    }
+
+    res.status(201).json(
+      ApiResponse.success("Tạo phiếu kiểm kho thành công", {
+        id,
+        MaKiemKho: checkCode,
+      })
+    );
+  } catch (error) {
+    res.status(500).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.getInventoryCheck = async (req, res) => {
+  try {
+    const check = await InventoryCheck.getById(req.params.id);
+    if (!check) {
+      throw new AppError("Không tìm thấy phiếu kiểm kho", 404);
+    }
+
+    const details = await InventoryCheck.getDetails(req.params.id);
+    check.ChiTiet = details;
+
+    res.json(ApiResponse.success("", check));
+  } catch (error) {
+    res.status(error.statusCode || 500).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.getAllInventoryChecks = async (req, res) => {
+  try {
+    const filters = {
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      status: req.query.status,
+      limit: req.query.limit,
+      offset: req.query.offset,
+    };
+
+    const checks = await InventoryCheck.getAll(filters);
+    res.json(ApiResponse.success("", checks));
+  } catch (error) {
+    res.status(500).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.updateInventoryCheckStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (![1, 2, 3].includes(status)) {
+      throw new AppError("Trạng thái không hợp lệ", 400);
+    }
+
+    const check = await InventoryCheck.getById(req.params.id);
+    if (!check) {
+      throw new AppError("Không tìm thấy phiếu kiểm kho", 404);
+    }
+
+    if (check.TrangThai === 2) {
+      throw new AppError(
+        "Không thể cập nhật phiếu kiểm kho đã hoàn thành",
+        400
+      );
+    }
+
+    await InventoryCheck.updateStatus(req.params.id, status, req.user.id);
+
+    res.json(ApiResponse.success("Cập nhật trạng thái kiểm kho thành công"));
+  } catch (error) {
+    res.status(error.statusCode || 500).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.addInventoryCheckDetail = async (req, res) => {
+  try {
+    const check = await InventoryCheck.getById(req.params.id);
+    if (!check) {
+      throw new AppError("Không tìm thấy phiếu kiểm kho", 404);
+    }
+
+    if (check.TrangThai !== 1) {
+      throw new AppError(
+        "Chỉ có thể thêm chi tiết cho phiếu đang kiểm kho",
+        400
+      );
+    }
+
+    await check.addDetail(req.body.details);
+
+    res.json(ApiResponse.success("Thêm chi tiết kiểm kho thành công"));
+  } catch (error) {
+    res.status(error.statusCode || 500).json(ApiResponse.error(error.message));
   }
 };

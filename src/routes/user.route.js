@@ -29,6 +29,16 @@ router.post(
 router.post("/login", validate(schemas.user.login), userController.login);
 router.post("/forgot-password", userController.forgotPassword);
 router.post("/reset-password", userController.resetPassword);
+router.post(
+  "/verify-email",
+  validate(schemas.user.verifyEmail),
+  userController.verifyEmail
+);
+router.post(
+  "/resend-verification",
+  validate(schemas.user.resendVerification),
+  userController.resendVerification
+);
 
 // Protected routes
 router.get("/me", authenticate, userController.getCurrentUser);

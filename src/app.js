@@ -14,6 +14,10 @@ const orderRoutes = require("./routes/order.route");
 const wishlistRoutes = require("./routes/wishlist.route");
 const reviewRoutes = require("./routes/review.route");
 const inventoryRoutes = require("./routes/inventory.route");
+const shippingRoutes = require("./routes/shipping.route");
+const paymentRoutes = require("./routes/payment.route");
+const colorRoutes = require("./routes/color.route");
+const sizeRoutes = require("./routes/size.route");
 
 const app = express();
 
@@ -89,6 +93,10 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/shipping", shippingRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/colors", colorRoutes);
+app.use("/api/sizes", sizeRoutes);
 
 // Home route
 app.get("/", (req, res) => {

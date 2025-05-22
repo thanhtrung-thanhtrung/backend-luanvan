@@ -105,6 +105,28 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.body;
+    await UserService.verifyEmail(token);
+    res.json(ApiResponse.success("Xác thực email thành công"));
+  } catch (error) {
+    res.status(400).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    await UserService.resendVerification(email);
+    res.json(
+      ApiResponse.success("Link xác thực mới đã được gửi vào email của bạn")
+    );
+  } catch (error) {
+    res.status(400).json(ApiResponse.error(error.message));
+  }
+};
+
 // Admin functions
 exports.getAllUsers = async (req, res) => {
   try {

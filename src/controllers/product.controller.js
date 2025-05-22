@@ -1,25 +1,48 @@
 const Product = require("../models/product.model");
 const UploadService = require("../services/upload.service");
+const ApiResponse = require("../utils/apiResponse");
 
 exports.getAllProducts = async (req, res) => {
   try {
     const filters = {
       categoryId: req.query.categoryId,
       brandId: req.query.brandId,
-      priceMin: req.query.priceMin,
-      priceMax: req.query.priceMax,
+      priceMin:
+        req.query.priceMin !== undefined
+          ? parseFloat(req.query.priceMin)
+          : undefined,
+      priceMax:
+        req.query.priceMax !== undefined
+          ? parseFloat(req.query.priceMax)
+          : undefined,
+      colors: req.query.colors ? req.query.colors.split(",") : undefined,
+      sizes: req.query.sizes ? req.query.sizes.split(",") : undefined,
+      inStock: req.query.inStock === "true",
+      search: req.query.search,
+      sort: req.query.sort,
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 12,
     };
 
     const products = await Product.getAll(filters);
-    res.json({
-      status: "success",
-      data: products,
-    });
+
+    // Get total count for pagination
+    const totalProducts = await Product.getCount(filters);
+    const totalPages = Math.ceil(totalProducts / filters.limit);
+
+    res.json(
+      ApiResponse.success("", {
+        products,
+        pagination: {
+          page: filters.page,
+          limit: filters.limit,
+          total: totalProducts,
+          totalPages,
+        },
+      })
+    );
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json(ApiResponse.error(error.message));
   }
 };
 
@@ -27,26 +50,23 @@ exports.getProductById = async (req, res) => {
   try {
     const product = await Product.getById(req.params.id);
     if (!product) {
-      return res.status(404).json({
-        status: "error",
-        message: "Sản phẩm không tồn tại",
-      });
+      return res.status(404).json(ApiResponse.error("Sản phẩm không tồn tại"));
     }
 
     const variants = await Product.getVariants(req.params.id);
+    const relatedProducts = await Product.getRelatedProducts(req.params.id);
 
-    res.json({
-      status: "success",
-      data: {
-        ...product,
-        variants,
-      },
-    });
+    res.json(
+      ApiResponse.success("", {
+        product: {
+          ...product,
+          variants,
+        },
+        relatedProducts,
+      })
+    );
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json(ApiResponse.error(error.message));
   }
 };
 
@@ -77,15 +97,108 @@ exports.getProductVariants = async (req, res) => {
       });
     }
 
-    res.json({
-      status: "success",
-      data: variants,
-    });
+    res.json(ApiResponse.success("", variants));
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
+    res.status(500).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.addProductVariant = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.getById(productId);
+
+    if (!product) {
+      throw new AppError("Không tìm thấy sản phẩm", 404);
+    }
+
+    const productInstance = new Product(product);
+    const variantId = await productInstance.addVariant(req.body);
+
+    res
+      .status(201)
+      .json(
+        ApiResponse.success("Thêm biến thể sản phẩm thành công", {
+          id: variantId,
+        })
+      );
+  } catch (error) {
+    const statusCode = error.message.includes("đã tồn tại") ? 400 : 500;
+    res.status(statusCode).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.updateProductVariant = async (req, res) => {
+  try {
+    const { id: productId, variantId } = req.params;
+    const product = await Product.getById(productId);
+
+    if (!product) {
+      throw new AppError("Không tìm thấy sản phẩm", 404);
+    }
+
+    const productInstance = new Product(product);
+    await productInstance.updateVariant(variantId, req.body);
+
+    res.json(ApiResponse.success("Cập nhật biến thể sản phẩm thành công"));
+  } catch (error) {
+    const statusCode = error.message.includes("không tồn tại") ? 404 : 500;
+    res.status(statusCode).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.deleteProductVariant = async (req, res) => {
+  try {
+    const { id: productId, variantId } = req.params;
+    const product = await Product.getById(productId);
+
+    if (!product) {
+      throw new AppError("Không tìm thấy sản phẩm", 404);
+    }
+
+    const productInstance = new Product(product);
+    await productInstance.deleteVariant(variantId);
+
+    res.json(ApiResponse.success("Xóa biến thể sản phẩm thành công"));
+  } catch (error) {
+    const statusCode = error.message.includes("đã được đặt hàng")
+      ? 400
+      : error.message.includes("không tồn tại")
+      ? 404
+      : 500;
+    res.status(statusCode).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.getAvailableColors = async (req, res) => {
+  try {
+    const { id: productId } = req.params;
+    const { sizeId } = req.query;
+
+    if (!sizeId) {
+      throw new AppError("Vui lòng chọn kích cỡ", 400);
+    }
+
+    const colors = await Product.getAvailableColors(productId, sizeId);
+    res.json(ApiResponse.success("", colors));
+  } catch (error) {
+    res.status(error.statusCode || 500).json(ApiResponse.error(error.message));
+  }
+};
+
+exports.getAvailableSizes = async (req, res) => {
+  try {
+    const { id: productId } = req.params;
+    const { colorId } = req.query;
+
+    if (!colorId) {
+      throw new AppError("Vui lòng chọn màu sắc", 400);
+    }
+
+    const sizes = await Product.getAvailableSizes(productId, colorId);
+    res.json(ApiResponse.success("", sizes));
+  } catch (error) {
+    res.status(error.statusCode || 500).json(ApiResponse.error(error.message));
   }
 };
 

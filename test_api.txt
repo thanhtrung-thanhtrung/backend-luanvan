@@ -118,3 +118,72 @@ Authorization: Bearer {token}
 Example: GET /api/categories/1/products
 
 
+Chức năng xác thực khách hàng (Authentication):
+Đã có: Đăng ký, đăng nhập, đăng xuất, quên mật khẩu
+Cần bổ sung: Xác thực email khi đăng ký
+Tương tác sản phẩm:
+Đã có:
+Tìm kiếm, lọc sản phẩm
+Xem chi tiết sản phẩm
+Đánh giá sản phẩm
+Cần bổ sung:
+Lọc nâng cao (theo giá, màu sắc, size)
+Sắp xếp sản phẩm
+Xem sản phẩm liên quan
+Quản lý tài khoản:
+Đã có:
+Cập nhật thông tin
+Đổi mật khẩu
+Xóa tài khoản
+Cần bổ sung:
+Lịch sử đăng nhập
+Quản lý địa chỉ giao hàng
+Giỏ hàng:
+Đã có đầy đủ các chức năng:
+Thêm/xóa sản phẩm
+Cập nhật số lượng
+Xóa giỏ hàng
+Mua hàng:
+Đã có:
+Đặt hàng
+Theo dõi đơn hàng
+Áp dụng mã giảm giá
+Cần bổ sung:
+Tích hợp thanh toán online (VNPay, Momo)
+Tính phí vận chuyển tự động
+In hóa đơn
+Wishlist:
+Đã có đầy đủ các chức năng:
+Thêm/xóa sản phẩm
+Xem danh sách
+Kiểm tra sản phẩm có trong wishlist
+Quản lý sản phẩm (Admin):
+Đã có:
+CRUD sản phẩm cơ bản
+Cần bổ sung:
+Quản lý biến thể sản phẩm (size, màu)
+Nhập/xuất Excel
+Quản lý hình ảnh sản phẩm
+Quản lý thương hiệu và danh mục:
+Đã có:
+CRUD cơ bản
+Cần bổ sung:
+Sắp xếp thứ tự hiển thị
+SEO cho danh mục
+Quản lý kho:
+Đã có:
+Quản lý phiếu nhập
+Thống kê tồn kho
+Cần bổ sung:
+Quản lý phiếu xuất
+Cảnh báo hết hàng
+Lịch sử xuất nhập kho
+Kiểm kho định kỳ
+Quản lý doanh thu:
+Đã có:
+Thống kê cơ bản
+Cần bổ sung:
+Báo cáo chi tiết theo thời gian
+Biểu đồ thống kê
+Xuất báo cáo
+Phân tích xu hướng

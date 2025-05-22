@@ -49,6 +49,62 @@ class Cart {
     this.totalPrice += itemPrice * quantity;
   }
 
+  async addVariant(variantId, quantity = 1) {
+    // Lấy thông tin biến thể và sản phẩm
+    const [rows] = await db.execute(
+      `SELECT spbt.*, sp.Ten, sp.Gia, sp.GiaKhuyenMai, sp.HinhAnh, 
+              ms.Ten as TenMauSac, kc.Ten as TenKichCo
+       FROM sanpham_bien_the spbt
+       JOIN sanpham sp ON spbt.id_SanPham = sp.id 
+       JOIN mausac ms ON spbt.id_MauSac = ms.id
+       JOIN kichco kc ON spbt.id_KichCo = kc.id
+       WHERE spbt.id = ?`,
+      [variantId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error("Biến thể sản phẩm không tồn tại");
+    }
+
+    const variant = rows[0];
+
+    // Kiểm tra số lượng tồn kho
+    if (variant.SoLuong < quantity) {
+      throw new Error("Số lượng sản phẩm trong kho không đủ");
+    }
+
+    let storedItem = this.items[variantId];
+
+    if (!storedItem) {
+      storedItem = this.items[variantId] = {
+        item: {
+          id: variant.id_SanPham,
+          Ten: variant.Ten,
+          Gia: variant.Gia,
+          GiaKhuyenMai: variant.GiaKhuyenMai,
+          HinhAnh: variant.HinhAnh,
+          variant: {
+            id: variant.id,
+            TenMauSac: variant.TenMauSac,
+            TenKichCo: variant.TenKichCo,
+          },
+        },
+        qty: 0,
+        price: 0,
+      };
+    }
+
+    storedItem.qty += quantity;
+    if (storedItem.qty > variant.SoLuong) {
+      throw new Error("Số lượng sản phẩm trong kho không đủ");
+    }
+
+    const itemPrice = variant.GiaKhuyenMai || variant.Gia;
+    storedItem.price = storedItem.qty * itemPrice;
+    this.totalQty += quantity;
+    this.totalPrice += itemPrice * quantity;
+  }
+
   async getVariantDetails(variantId) {
     const [rows] = await db.execute(
       `SELECT spbt.*, ms.Ten as TenMauSac, kc.Ten as TenKichCo
